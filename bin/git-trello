@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
-import git
-import cli.log
 import requests
 import subprocess
 import json
-from requests_oauthlib import OAuth1Session
 
 TRELLO_URL = 'https://api.trello.com/1/board/{0}/cards/{1}'
 TRELLO_KEY = '8b330c0e445c6e3eee3e32f1a26a3c0b'
@@ -15,6 +12,7 @@ TRELLO_FOREVER_READ_ONLY_TOKEN = '3565d6f295030010bdca7fd25f22aa46cd417ec3bf4eb0
 TRELLO_BOARD_HASH = {
     'PD':'533d048e921fd8f42187cef6'
 }
+REQUESTS_SESSION = requests.Session()
 
 class bcolors:
     ENDC = '\033[0m'
@@ -51,16 +49,14 @@ class bcolors:
     def set_ansi_color(string, color=None):
         return bcolors.COLOR_HASH.get(color,bcolors.WHITE) + string + bcolors.ENDC
 
-def get_trello_card_info(app,board_name,card_no):
+def get_trello_card_info(board_name,card_no):
     try:
         url = TRELLO_URL.format(TRELLO_BOARD_HASH[board_name],card_no)
         data = {'key':TRELLO_KEY, 'token':TRELLO_FOREVER_READ_ONLY_TOKEN}
 
-        response = requests.get(url, data=data, timeout=3)
+        response = REQUESTS_SESSION.get(url, data=data, timeout=1)
         response.raise_for_status()
         card_info = json.loads(response.text)
-
-        app.log.info(card_info)
 
         labels = []
         for label in json.loads(json.dumps(card_info['labels'])):
@@ -69,13 +65,9 @@ def get_trello_card_info(app,board_name,card_no):
         return u"{0} {1}".format(' '.join(labels), card_info['name'])
 
     except Exception as e:
-        app.log.error("------------------ error -------------------")
-        app.log.error(e)
-        app.log.error("------------------ error -------------------")
         return ''
 
-@cli.log.LoggingApp
-def main(app):
+def main():
     pr = subprocess.Popen(['git branch --all -v'],
         stdout=subprocess.PIPE, 
         stderr=subprocess.PIPE, 
@@ -94,12 +86,12 @@ def main(app):
 
         if branch_name.count('-') == 1:
             trello_board_name, trello_card_no = branch_name.split('-')
-            trello_card_name = get_trello_card_info(app,trello_board_name, trello_card_no)
+            trello_card_name = get_trello_card_info(trello_board_name, trello_card_no)
 
         branch_name = bcolors.set_ansi_color(branch_name,'red')
         branch_head = bcolors.set_ansi_color(branch_head,'yellow')
 
-        print "%2s %-30s %-16s %s" % (
+        print "%2s %-30s %-18s %s" % (
             is_current_branch,
             branch_name,
             branch_head,
@@ -107,4 +99,4 @@ def main(app):
         )
 
 if __name__ == '__main__':
-    main.run()
+    main()
