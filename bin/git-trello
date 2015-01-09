@@ -88,7 +88,11 @@ def main():
             trello_board_name, trello_card_no = branch_name.split('-')
             trello_card_name = get_trello_card_info(trello_board_name, trello_card_no)
 
-        branch_name = bcolors.set_ansi_color(branch_name,'red')
+        if is_current_branch == '*':
+            branch_name = bcolors.set_ansi_color(branch_name,'green')
+        else:
+            branch_name = bcolors.set_ansi_color(branch_name,'red')
+
         branch_head = bcolors.set_ansi_color(branch_head,'yellow')
 
         print "%2s %-30s %-18s %s" % (
