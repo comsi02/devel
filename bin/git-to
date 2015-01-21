@@ -1,15 +1,9 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-
 import subprocess
 import json
 
-'''
-Trello Card = 'https://api.trello.com/1/board/533d048e921fd8f42187cef6/card/1752?key=8b330c0e445c6e3eee3e32f1a26a3c0b&token=3565d6f295030010bdca7fd25f22aa46cd417ec3bf4eb05fb0476953aa1b4c16'
-'''
-
-TRELLO_URL = 'https://api.trello.com/1/board/533d048e921fd8f42187cef6/cards/visible/?key=8b330c0e445c6e3eee3e32f1a26a3c0b&token=3565d6f295030010bdca7fd25f22aa46cd417ec3bf4eb05fb0476953aa1b4c16'
-TRELLO_DICT = {}
+TRELLO_S3_URL = 'https://s3-us-west-1.amazonaws.com/buzzvil.storage/trello/trello_product.json'
 
 class bcolors:
     ENDC = '\033[0m'
@@ -46,20 +40,8 @@ class bcolors:
     def set_ansi_color(string, color=None):
         return bcolors.COLOR_HASH.get(color,bcolors.WHITE) + string + bcolors.ENDC
 
-def get_trello_card_info(board_name,card_no):
-    try:
-        card_info = TRELLO_DICT[card_no]
-        labels = []
-        for label in json.loads(json.dumps(card_info['labels'])):
-            labels.append(bcolors.set_ansi_color("[" + label['name'] + "]",label['color']))
-
-        return u"{0} {1}".format(' '.join(labels), card_info['name'])
-
-    except Exception as e:
-        return ''
-
 def main():
-    pr = subprocess.Popen(["/usr/bin/curl '{0}' --compressed".format(TRELLO_URL)],
+    pr = subprocess.Popen(["/usr/bin/curl '{0}' --compressed".format(TRELLO_S3_URL)],
         stdout=subprocess.PIPE, 
         stderr=subprocess.PIPE,
         shell=True
@@ -67,12 +49,8 @@ def main():
 
     (out, error) = pr.communicate()
 
-    for t in json.loads(out):
-        TRELLO_DICT[t['idShort']] = {
-            'name':   t['name'],
-            'labels': t['labels']
-        }
-    
+    trello_dict = json.loads(out)
+
     pr = subprocess.Popen(['git branch --all -v'],
         stdout=subprocess.PIPE, 
         stderr=subprocess.PIPE, 
@@ -91,7 +69,7 @@ def main():
 
         if branch_name.count('-') == 1:
             trello_board_name, trello_card_no = branch_name.split('-')
-            trello_card_name = get_trello_card_info(trello_board_name, int(trello_card_no))
+            trello_card_name = trello_dict.get(trello_card_no,'')
 
         if is_current_branch == '*':
             branch_name = bcolors.set_ansi_color(branch_name,'green')
