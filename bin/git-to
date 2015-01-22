@@ -78,7 +78,7 @@ def main():
 
         branch_head = bcolors.set_ansi_color(branch_head,'yellow')
 
-        print "%2s %-30s %-18s %s" % (
+        print "%2s %-35s %-18s %s" % (
             is_current_branch,
             branch_name,
             branch_head,
