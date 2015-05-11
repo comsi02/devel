@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 import subprocess
 import json
+import sys
 
 TRELLO_S3_URL = 'https://s3-us-west-1.amazonaws.com/buzzvil.storage/trello/trello_product.json'
 
@@ -41,6 +42,12 @@ class bcolors:
         return bcolors.COLOR_HASH.get(color,bcolors.WHITE) + string + bcolors.ENDC
 
 def main():
+
+    branch_opt = ""
+
+    if "--all" in sys.argv:
+        branch_opt = "--all"
+
     pr = subprocess.Popen(["/usr/bin/curl '{0}' --compressed".format(TRELLO_S3_URL)],
         stdout=subprocess.PIPE, 
         stderr=subprocess.PIPE,
@@ -51,7 +58,7 @@ def main():
 
     trello_dict = json.loads(out)
 
-    pr = subprocess.Popen(['git branch --all -v'],
+    pr = subprocess.Popen(['git branch -v {0}'.format(branch_opt)],
         stdout=subprocess.PIPE, 
         stderr=subprocess.PIPE, 
         shell=True)
