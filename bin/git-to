@@ -85,12 +85,20 @@ def main():
 
         branch_head = bcolors.set_ansi_color(branch_head,'yellow')
 
-        print "%2s %-35s %-18s %s" % (
-            is_current_branch,
-            branch_name,
-            branch_head,
-            trello_card_name or branch_comment
-        )
+        if len(branch_name) > 16:
+            print "%2s %-40s %-18s %s" % (
+                is_current_branch,
+                branch_name,
+                branch_head,
+                trello_card_name or branch_comment
+            )
+        else:
+            print "%2s %-18s %-18s %s" % (
+                is_current_branch,
+                branch_name,
+                branch_head,
+                trello_card_name or branch_comment
+            )
 
 if __name__ == '__main__':
     main()
