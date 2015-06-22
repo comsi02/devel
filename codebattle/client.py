@@ -1,7 +1,19 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-
 import socket
+
+'''
+    1. 등록
+    2. game start
+        - total round, total turn, 상대아이디
+    3. round start
+        - round info, round
+    4. turn start
+    5. turn end
+    6. round end
+    7. game end
+    4. 공격 (가위/바위/보)
+'''
 
 class Player:
     def __init__(self, name):
