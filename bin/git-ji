@@ -1,0 +1,2 @@
+#!/bin/sh
+/bin/git-jira $1

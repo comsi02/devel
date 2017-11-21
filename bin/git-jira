@@ -3,11 +3,11 @@
 import subprocess
 import json
 import sys
+import os
 import pycurl
 from StringIO import StringIO
 
-JIRA_URL = 'http://jira.daumkakao.com/rest/api/2/issue/'
-JIRA_AUTH = 'YW5kcmV3LnNvbmc6d2pzcmhrZHVzMDIh'
+# https://www.joinc.co.kr/w/man/12/jira
 
 class bcolors:
     ENDC = '\033[0m'
@@ -44,50 +44,71 @@ class bcolors:
     def set_ansi_color(string, color=None):
         return bcolors.COLOR_HASH.get(color,bcolors.WHITE) + string + bcolors.ENDC
 
-def get_jira_issue(branch_name):
+def get_jira_issue(branch_key):
+    try:
+        jira_url = os.environ['JIRA_URL']
+        jira_auth = os.environ['JIRA_AUTH']
 
-    buffer = StringIO()
-    c = pycurl.Curl()
-    c.setopt(c.URL, "{0}{1}".format(JIRA_URL,branch_name))
-    c.setopt(c.HTTPHEADER, ["Authorization:Basic {0}".format(JIRA_AUTH)])
-    c.setopt(c.WRITEDATA, buffer)
-    c.perform()
-    c.close()
-    body = buffer.getvalue()
+        buffer = StringIO()
+        c = pycurl.Curl()
+        c.setopt(c.URL, "{0}/{1}".format(jira_url,branch_key))
+        c.setopt(c.HTTPHEADER, ["Authorization:Basic {0}".format(jira_auth)])
+        c.setopt(c.WRITEDATA, buffer)
+        c.perform()
+        c.close()
+        body = buffer.getvalue()
 
-    issue_dict = json.loads(body)
-    fields = issue_dict.get('fields') or ''
+        issue_dict = json.loads(body)
+        fields = issue_dict.get('fields') or ''
 
-    if (fields):
-        issue_name = fields.get('summary').encode('utf-8')
-        issue_status = bcolors.set_ansi_color("[{0}]".format(fields.get('status').get('name').encode('utf-8')),'skyblue')
-        return "{0} {1}".format(issue_status,issue_name)
-
-    return ''
+        if (fields):
+            issue_name = fields.get('summary').encode('utf-8')
+            issue_status = bcolors.set_ansi_color("[{0}]".format(fields.get('status').get('name').encode('utf-8')),'skyblue')
+            return "{0} {1}".format(issue_status,issue_name)
+    except Exception as e:
+        print e
+        return ''
 
 def main():
-
-    branch_opt = ""
+    jira_cache = {}
+    branch_opt = ''
+    do_flush = False
 
     if "-a" in sys.argv:
         branch_opt = "--all"
 
-    pr = subprocess.Popen("git branch -v {0}".format(branch_opt),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=True)
+    if "-f" in sys.argv:
+        do_flush = True
 
-    (out, error) = pr.communicate()
+    if "-h" in sys.argv:
+        raise Exception('Show Help')
 
-    branches = out.rstrip().split('\n')
+    # get jira cache
+    try:
+        f = open(os.environ['JIRA_CACHE_FILE'],'r')
+        jira_cache = json.loads(f.readline())
+        f.close
+    except:
+        jira_cache = {}
 
-    for b in branches:
+    # get git branch output
+    (out, error) = subprocess.Popen("git branch -v {0}".format(branch_opt), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).communicate()
+
+    # loop branch list
+    for b in out.rstrip().split('\n'):
         is_current_branch = b[:2].strip()
         branch_infos = b[2:].split()
         branch_name = branch_infos[0]
         branch_head = branch_infos[1]
         branch_comment = ' '.join(branch_infos[2:])
-        issue_name = get_jira_issue(branch_name)
+        branch_key = branch_name.split('/').pop()
+
+        if do_flush == False and jira_cache.get(branch_key):
+            jira_issue_name = jira_cache.get(branch_key).encode('utf-8')
+        else:
+            jira_issue_name = get_jira_issue(branch_key) or branch_comment
+
+        jira_cache[branch_key] = jira_issue_name
 
         if is_current_branch == '*':
             branch_name = bcolors.set_ansi_color(branch_name,'green')
@@ -96,12 +117,41 @@ def main():
 
         branch_head = bcolors.set_ansi_color(branch_head,'yellow')
 
-        print "%2s %-24s %-18s %s" % (
-            is_current_branch,
-            branch_name,
-            branch_head,
-            issue_name or branch_comment
-        )
+        if branch_opt:
+            print "%2s %-40s %-18s %s" % ( is_current_branch, branch_name, branch_head, jira_issue_name )
+        else:
+            print "%2s %-30s %-18s %s" % ( is_current_branch, branch_name, branch_head, jira_issue_name )
+
+    # save jira cache
+    try:
+        f = open(os.environ['JIRA_CACHE_FILE'],'w')
+        f.write(json.dumps(jira_cache))
+        f.close
+    except:
+        print "json save error"
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        print ""
+        print "usage:\t{0} [-a] [-f] [-h]".format(sys.argv[0])
+        print ""
+        print "\t-a: \t all branch (include remote branch)"
+        print "\t-f: \t flush issue_name"
+        print "\t-f: \t show help"
+        print ""
+        print "\tGet authorization key:"
+        print "\t\techo -n \"user_id:password\" | openssl enc -base64"
+        print ""
+        print "\tEdit bashrc file:"
+        print "\t\texport JIRA_URL='http://jira.daumkakao.com/rest/api2/issue'"
+        print "\t\texport JIRA_AUTH='dXNlcl9pZDpwYXNzd29yZA=='"
+        print ""
+        print "\t\t[windows]"
+        print "\t\texport JIRA_CACHE_FILE='C:\USers\kakaogames\.gitjira'"
+        print ""
+        print "\t\t[linux]"
+        print "\t\texport JIRA_CACHE_FILE='~/.gitjira'"
+        print "\tStatus:"
+        print "\t\t{0}".format(e)
