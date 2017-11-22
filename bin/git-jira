@@ -1,13 +1,14 @@
-#!/c/Python27/python
 # -*- coding:utf-8 -*-
 import subprocess
 import json
 import sys
 import os
 import pycurl
-from StringIO import StringIO
+import cStringIO
 
 # https://www.joinc.co.kr/w/man/12/jira
+# pip install
+# sudo env ARCHFLAGS="-arch x86_64" easy_install setuptools pycurl==7.19.0
 
 class bcolors:
     ENDC = '\033[0m'
@@ -49,14 +50,14 @@ def get_jira_issue(branch_key):
         jira_url = os.environ['JIRA_URL']
         jira_auth = os.environ['JIRA_AUTH']
 
-        buffer = StringIO()
+        buf = cStringIO.StringIO()
         c = pycurl.Curl()
         c.setopt(c.URL, "{0}/{1}".format(jira_url,branch_key))
         c.setopt(c.HTTPHEADER, ["Authorization:Basic {0}".format(jira_auth)])
-        c.setopt(c.WRITEDATA, buffer)
+        c.setopt(c.WRITEFUNCTION, buf.write)
         c.perform()
-        c.close()
-        body = buffer.getvalue()
+        body = buf.getvalue()
+        buf.close()
 
         issue_dict = json.loads(body)
         fields = issue_dict.get('fields') or ''
@@ -106,9 +107,11 @@ def main():
         if do_flush == False and jira_cache.get(branch_key):
             jira_issue_name = jira_cache.get(branch_key).encode('utf-8')
         else:
-            jira_issue_name = get_jira_issue(branch_key) or branch_comment
-
-        jira_cache[branch_key] = jira_issue_name
+            jira_issue_name = get_jira_issue(branch_key)
+            if jira_issue_name:
+                jira_cache[branch_key] = jira_issue_name
+            else:
+                jira_issue_name = branch_comment
 
         if is_current_branch == '*':
             branch_name = bcolors.set_ansi_color(branch_name,'green')
@@ -127,6 +130,7 @@ def main():
         f = open(os.environ['JIRA_CACHE_FILE'],'w')
         f.write(json.dumps(jira_cache))
         f.close
+        print os.environ['JIRA_CACHE_FILE']
     except:
         print "json save error"
 
@@ -146,12 +150,12 @@ if __name__ == '__main__':
         print ""
         print "\tEdit bashrc file:"
         print "\t\texport JIRA_URL='http://jira.daumkakao.com/rest/api2/issue'"
-        print "\t\texport JIRA_AUTH='dXNlcl9pZDpwYXNzd29yZA=='"
+        print "\t\texport JIRA_AUTH='dscl9pZDpfdskzd29yZA=='"
         print ""
         print "\t\t[windows]"
         print "\t\texport JIRA_CACHE_FILE='C:\USers\kakaogames\.gitjira'"
         print ""
         print "\t\t[linux]"
-        print "\t\texport JIRA_CACHE_FILE='~/.gitjira'"
+        print "\t\texport JIRA_CACHE_FILE='/Users/kakaogames/.gitjira'"
         print "\tStatus:"
         print "\t\t{0}".format(e)
