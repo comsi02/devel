@@ -1,2 +1,2 @@
-#!/bin/sh/
-/usr/bin/python /bin/git-jira $1
+#!/bin/sh
+/usr/bin/python /usr/local/bin/git-jira $1
