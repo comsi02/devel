@@ -130,7 +130,6 @@ def main():
         f = open(os.environ['JIRA_CACHE_FILE'],'w')
         f.write(json.dumps(jira_cache))
         f.close
-        print os.environ['JIRA_CACHE_FILE']
     except:
         print "json save error"
 

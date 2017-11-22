@@ -1,0 +1,2 @@
+#!/bin/sh/
+/c/Python27/python /bin/git-jira $1
