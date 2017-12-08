@@ -152,9 +152,9 @@ if __name__ == '__main__':
         print "\t\texport JIRA_AUTH='dscl9pZDpfdskzd29yZA=='"
         print ""
         print "\t\t[windows]"
-        print "\t\texport JIRA_CACHE_FILE='C:\USers\kakaogames\.gitjira'"
+        print "\t\texport JIRA_CACHE_FILE=\"/c/Users/$USERNAME/.gitjira\""
         print ""
         print "\t\t[linux]"
-        print "\t\texport JIRA_CACHE_FILE='/Users/kakaogames/.gitjira'"
+        print "\t\texport JIRA_CACHE_FILE=\"/Users/$USERNAME/.gitjira\""
         print "\tStatus:"
         print "\t\t{0}".format(e)

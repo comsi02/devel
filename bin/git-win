@@ -1,2 +1,2 @@
 #!/bin/sh
-/c/Python27/python /bin/git-jira $1
+/c/Python27/python /c/Dropbox/Development/devel/bin/git-jira $1
