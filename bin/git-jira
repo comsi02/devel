@@ -46,9 +46,17 @@ class bcolors:
         return bcolors.COLOR_HASH.get(color,bcolors.WHITE) + string + bcolors.ENDC
 
 def get_jira_issue(branch_key):
+
     try:
         jira_url = os.environ['JIRA_URL']
         jira_auth = os.environ['JIRA_AUTH']
+
+        status_color = {
+            'Open': 'green',
+	    'In Progress': 'skyblue',
+	    'Resolved': 'purple',
+	    'Closed': 'purple',
+        }
 
         buf = cStringIO.StringIO()
         c = pycurl.Curl()
@@ -64,7 +72,8 @@ def get_jira_issue(branch_key):
 
         if (fields):
             issue_name = fields.get('summary').encode('utf-8')
-            issue_status = bcolors.set_ansi_color("[{0}]".format(fields.get('status').get('name').encode('utf-8')),'skyblue')
+            issue_status_color = status_color.get(fields.get('status').get('name').encode('utf-8'),'skyblue')
+            issue_status = bcolors.set_ansi_color("[{0}]".format(fields.get('status').get('name').encode('utf-8')),issue_status_color)
             return "{0} {1}".format(issue_status,issue_name)
     except Exception as e:
         print e
@@ -75,14 +84,15 @@ def main():
     branch_opt = ''
     do_flush = False
 
-    if "-a" in sys.argv:
-        branch_opt = "--all"
+    if len(sys.argv) > 1:
+        if sys.argv[1].find('a') > 0:
+            branch_opt = "--all"
 
-    if "-f" in sys.argv:
-        do_flush = True
+        if sys.argv[1].find('f') > 0:
+            do_flush = True
 
-    if "-h" in sys.argv:
-        raise Exception('Show Help')
+        if sys.argv[1].find('h') > 0:
+            raise Exception('Show Help')
 
     # get jira cache
     try:
@@ -123,7 +133,7 @@ def main():
         if branch_opt:
             print "%2s %-40s %-18s %s" % ( is_current_branch, branch_name, branch_head, jira_issue_name )
         else:
-            print "%2s %-30s %-18s %s" % ( is_current_branch, branch_name, branch_head, jira_issue_name )
+            print "%2s %-31s %-18s %s" % ( is_current_branch, branch_name, branch_head, jira_issue_name )
 
     # save jira cache
     try:
