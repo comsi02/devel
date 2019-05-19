@@ -1,10 +1,17 @@
 #!/usr/bin/env perl
 my $u="http://127.0.0.1:9000/flask/jira/info";
-my $all;
+my $all="";
+my $PNO=20;
+
+sub jira {
+	my $k = join "\n", @_;
+	my $g = `echo "$k"|grep ''|base64|awk 'BEGIN{ORS="";} {print}'`;
+	print `echo;curl $u --data-urlencode "branch=$g" 2>/dev/null;`;
+}
 
 if (defined $ARGV[0]) {
     if ($ARGV[0] eq "-a") {
-		$all = "--all";
+	$all = "--all";
     }
     elsif($ARGV[0] eq "-h") {
         print "\n";
@@ -20,19 +27,12 @@ my @git;
 foreach(split /\n/, `git branch -v $all`) {
 	$idx += 1;
 	push @git, $_;
-	if ($idx % 20 eq 0) {
-		my $k = join "\n", @git;
-		my $g = `echo "$k"|grep ''|base64|awk 'BEGIN{ORS="";} {print}'`;
-		print `echo;curl $u --data-urlencode "branch=$g" 2>/dev/null;`;
+	if ($idx % $PNO eq 0) {
+		jira(@git);
 		@git = ();
 	}
 }
-my $k = join "\n", @git;
-my $g = `echo "$k"|grep ''|base64|awk 'BEGIN{ORS="";} {print}'`;
-print `echo;curl $u --data-urlencode "branch=$g" 2>/dev/null;`;
-print `echo`
+jira(@git) if (@git > 0);
 
+print "\n\n\033[37m  (C) 2019. (andrew.song) all rights reserved.\033[0m\n";
 __END__
-my $g=`git branch -v $all | grep '' | base64 | awk 'BEGIN{ORS="";} {print}'`;
-print `echo;curl $u --data-urlencode "branch=$g" 2>/dev/null;echo;`;
-
